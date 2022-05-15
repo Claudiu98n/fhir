@@ -1,12 +1,29 @@
-version: "3.7"
+version: "3.8"
 
 services:
+  fhir-server:
+    build: './backend'
+    image: 'fhir-server'
+    ports:
+      - 3000:3000
+    environment:
+      NODE_ENV: development
+      MONGO_HOSTNAME: mongo-db
+      MONGO_DB_NAME: development
+      MONGO_PORT: 27017
+    networks:
+      - fhir
+
   mongo-db:
     image: mongo:5.0.5
     ports:
-      - '27017:27017'
+      - 27017:27017
     volumes:
       - mongo_data:/data/db
+    networks:
+      - fhir
       
 volumes:
   mongo_data:
+networks:
+  fhir:

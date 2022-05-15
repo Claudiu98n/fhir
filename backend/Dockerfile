@@ -4,10 +4,10 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-RUN ["npm", "ci"]
+RUN ["yarn", "install"]
 
 COPY . .
 
-EXPOSE 5001
+EXPOSE 3000
 
 CMD ["npm", "run", "start"]

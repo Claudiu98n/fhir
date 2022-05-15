@@ -5,6 +5,6 @@
 ### Organization
 
 ## Link server:
-### https://54.86.15.119/
+### http://54.86.15.119:3000
 
 ## Exemple request-uri: Colectie Postman (FHIR.server.postman_collection.json)

@@ -77,40 +77,52 @@ module.exports.search = (args) =>
 // update patient
 module.exports.update = (args, { req }) =>
   new Promise((resolve, reject) => {
-    logger.info("Updating a patient");
+    logger.info(`Updating patient with id ${args.id}`);
 
     let { base_version } = args;
     let { id } = args;
+
     let resource = req.body;
 
     let db = globals.get("client_db");
     let collection = db.collection(`patients_collection_${base_version}`);
 
-    let Patient = getPatient(base_version);
-    let patient = new Patient(resource);
-
-    let Meta = getMeta(base_version);
-    patient.meta = new Meta({
-      versionId: "1",
-      lastUpdated: moment.utc().format("YYYY-MM-DDTHH:mm:ssZ"),
-    });
-
-    let doc = JSON.parse(JSON.stringify(patient.toJSON()));
-    Object.assign(doc, { id: id });
-
-    collection.updateOne({ id: id }, { $set: doc }, (err) => {
+    collection.findOne({ id: id }, (err, data) => {
       if (err) {
-        logger.error("Error while updating patient: ", err);
+        logger.error("Error while searching patient", err);
         return reject(err);
       }
+
+      if (!data) {
+        return reject(new Error(`Patient with id ${id} not found`));
+      }
+
+      let Patient = getPatient(base_version);
+      let patient = new Patient(resource);
+
+      let foundPatient = new Patient(data);
+      let meta = foundPatient.meta;
+      meta.versionId = (parseInt(foundPatient.meta.versionId) + 1).toString();
+      meta.lastUpdated = moment.utc().format("YYYY-MM-DDTHH:mm:ssZ");
+      patient.meta = meta;
+
+      let doc = JSON.parse(JSON.stringify(patient.toJSON()));
+      Object.assign(doc, { id: id });
+
+      collection.updateOne({ id: id }, { $set: doc }, (err) => {
+        if (err) {
+          logger.error("Error while updating patient: ", err);
+          return reject(err);
+        }
+      });
+      return resolve(patient);
     });
-    return resolve(patient);
   });
 
 // delete patient
 module.exports.remove = (args) =>
   new Promise((resolve, reject) => {
-    logger.info("Deleting a patient");
+    logger.info(`Delete patient with id ${args.id}`);
 
     let { base_version } = args;
     let { id } = args;
@@ -118,11 +130,22 @@ module.exports.remove = (args) =>
     let db = globals.get("client_db");
     let collection = db.collection(`patients_collection_${base_version}`);
 
-    collection.deleteOne({ id: id }, (err) => {
+    collection.findOne({ id: id }, (err, data) => {
       if (err) {
-        logger.error("Error while deleting patient: ", err);
+        logger.error("Error while searching patient", err);
         return reject(err);
       }
+
+      if (!data) {
+        return reject(new Error(`Patient with id ${id} not found`));
+      }
+
+      collection.deleteOne({ id: id }, (err) => {
+        if (err) {
+          logger.error("Error while deleting patient: ", err);
+          return reject(err);
+        }
+      });
+      return resolve();
     });
-    return resolve();
   });
